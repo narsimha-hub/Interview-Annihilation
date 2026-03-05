@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ATS AI Interview Agent</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --gray: #64748b;
+      --light: #f8fafc;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--light);
+      color: #0f172a;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0 0.25rem;
+      font-weight: 500;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="file"],
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+    button:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+    #result, #current, #summary {
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .score {
+      color: var(--success);
+      font-weight: bold;
+    }
+    .error {
+      color: var(--danger);
+      font-weight: 500;
+    }
+    .loading {
+      color: var(--gray);
+      font-style: italic;
+      margin: 1rem 0;
+    }
+    .complete {
+      text-align: center;
+      font-size: 1.25rem;
+      color: var(--success);
+      margin: 2rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ATS AI Interview Agent</h1>
+
+    <div class="card">
+      <h2>1. Upload Resume & Job Description</h2>
+      <label>Name</label>
+      <input type="text" id="name" placeholder="Your full name" required />
+
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@example.com" required />
+
+      <label>Resume (PDF)</label>
+      <input type="file" id="resume" accept=".pdf" required />
+
+      <label>Job Description (PDF)</label>
+      <input type="file" id="jd" accept=".pdf" required />
+
+      <button id="uploadBtn" onclick="uploadFiles()">Upload & Start</button>
+    </div>
+
+    <div id="loading" class="loading"></div>
+    <div id="result" class="card" style="display:none;"></div>
+
+    <div id="interview" class="card" style="display:none;">
+      <h2>2. Interview</h2>
+      <div id="current" class="card" style="display:none;"></div>
+      <textarea id="answer" placeholder="Type your answer here..." rows="6"></textarea>
+      <button id="submitBtn" onclick="submitAnswer()" disabled>Submit Answer</button>
+    </div>
+
+    <div id="summary" class="card" style="display:none;"></div>
+  </div>
+
+<script>
+  const API = "http://127.0.0.1:8000/applicants";
+  let applicantId = null;
+
+  function setLoading(text) {
+    const el = document.getElementById("loading");
+    el.textContent = text || "";
+    el.style.display = text ? "block" : "none";
+  }
+
+  async function uploadFiles() {
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const resume = document.getElementById("resume").files[0];
+    const jd = document.getElementById("jd").files[0];
+
+    if (!name || !email || !resume || !jd) {
+      alert("Please fill all fields and select both PDFs.");
+      return;
+    }
+
+    setLoading("Uploading files...");
+
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("email", email);
+    formData.append("resume", resume);
+    formData.append("jd", jd);
+
+    try {
+      console.log("Uploading to:", `${API}/`);
+      const res = await fetch(`${API}/`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Upload failed");
+      }
+
+      const data = await res.json();
+      applicantId = data.id;
+
+      document.getElementById("result").innerHTML = `
+        <h3>Screening Result</h3>
+        <p><strong>ID:</strong> ${data.id}</p>
+        <p><strong>Score:</strong> ${data.resume_match_score}</p>
+        <p><strong>Status:</strong> ${data.status}</p>
+      `;
+      document.getElementById("result").style.display = "block";
+      document.getElementById("interview").style.display = "block";
+
+      // FIXED: Read the first question correctly from response
+      const firstQuestion = data.first_question || (data.questions && data.questions[0]) || "No question received from server";
+      document.getElementById("current").innerHTML = `
+        <h3>Question 1</h3>
+        <p>${firstQuestion}</p>
+      `;
+      document.getElementById("submitBtn").disabled = false;
+
+      console.log("First question loaded:", firstQuestion);
+    } catch (err) {
+      console.error("Upload error:", err);
+      document.getElementById("result").innerHTML = `<p class="error">Error: ${err.message}</p>`;
+      document.getElementById("result").style.display = "block";
+    } finally {
+      setLoading("");
+    }
+  }
+
+  async function submitAnswer() {
+    const input = document.getElementById("answer");
+    const text = input.value.trim();
+
+    if (!text) {
+      alert("Please type your answer first.");
+      return;
+    }
+
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "Submitting...";
+
+    try {
+      console.log("Submitting answer for ID:", applicantId);
+      const res = await fetch(`${API}/${applicantId}/submit-answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question_index: 0,  // Always 0 - backend knows current is last
+          answer_text: text
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Submit error:", err);
+        throw new Error(err.detail || "Submit failed");
+      }
+
+      const data = await res.json();
+      console.log("Submit success:", data);
+
+      alert(`Score: ${data.score}/10\n${data.explanation}`);
+
+      input.value = "";
+
+      // Show next question if returned
+      if (data.next_question) {
+        document.getElementById("current").innerHTML = `
+          <h3>Question ${data.current_progress + 1}</h3>
+          <p>${data.next_question}</p>
+        `;
+        btn.disabled = false;
+      } else {
+        document.getElementById("current").innerHTML = `<p class="complete">Interview Complete!</p>`;
+        btn.disabled = true;
+      }
+
+      loadSummary();
+    } catch (err) {
+      console.error("Submit failed:", err);
+      alert("Error submitting: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Submit Answer";
+    }
+  }
+
+  async function loadSummary() {
+    if (!applicantId) return;
+
+    try {
+      const res = await fetch(`${API}/${applicantId}/summary`);
+      if (!res.ok) throw new Error(await res.text());
+
+      const data = await res.json();
+
+      document.getElementById("summary").innerHTML = `
+        <h2>Interview Summary</h2>
+        <p><strong>Total Score:</strong> ${data.total_interview_score}/10</p>
+        <p><strong>Answered:</strong> ${data.answered_questions} of ${data.total_questions}</p>
+        <p><strong>Progress:</strong> ${data.current_progress} / ${data.total_questions}</p>
+        <h3>Answers & Scores</h3>
+        ${data.interview_summary.map(item => `
+          <div class="summary-item">
+            <strong>Q${item.question_index + 1}:</strong> ${item.question}<br>
+            <strong>Answer:</strong> ${item.answer || "Not answered yet"}<br>
+            <strong>Score:</strong> <span class="score">${item.score !== null ? item.score + "/10" : "Pending"}</span>
+          </div>
+        `).join("")}
+      `;
+      document.getElementById("summary").style.display = "block";
+    } catch (err) {
+      document.getElementById("summary").innerHTML = `<p class="error">Summary failed: ${err.message}</p>`;
+    }
+  }
+</script>
+</body>
+</html>

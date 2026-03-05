@@ -1,0 +1,62 @@
+# Python / Virtual environments
+.venv/
+venv/
+env/
+*.pyc
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+coverage.xml
+*.egg
+
+# Environment & secrets (VERY IMPORTANT!)
+.env
+.env.*
+*.env
+secrets/
+credentials/
+api_keys.json
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs & temp files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Build & dist
+dist/
+build/
+*.egg-info/
+*.whl
+*.tar.gz
+
+# macOS / Windows junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Ollama / large model files (optional – if you ever store them locally)
+ollama/
+models/
+*.gguf
+*.bin
+
+# Database / test files (if you have local DB dumps)
+*.sql
+*.sqlite3
+*.db
+
+# Dependency directories (if you add frontend later)
+node_modules/
+npm-debug.log
+yarn-error.log
