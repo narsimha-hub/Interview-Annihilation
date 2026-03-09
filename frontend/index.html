@@ -1,295 +1,867 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ATS AI Interview Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --success: #10b981;
-      --danger: #ef4444;
-      --gray: #64748b;
-      --light: #f8fafc;
-      --border: #e2e8f0;
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #21262d;
+      --border:    #30363d;
+      --primary:   #58a6ff;
+      --primary-d: #1f6feb;
+      --success:   #3fb950;
+      --warning:   #d29922;
+      --danger:    #f85149;
+      --personal:  #bc8cff;
+      --technical: #58a6ff;
+      --experience:#3fb950;
+      --followup:  #ffa657;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    10px;
     }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, sans-serif;
-      background: var(--light);
-      color: #0f172a;
-      margin: 0;
-      padding: 20px;
+      font-family: 'Sora', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 2rem 1rem;
     }
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
+    .container { max-width: 760px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 2.5rem; }
+    header h1 {
+      font-size: 2rem; font-weight: 700; letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--personal) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
+    header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.88rem; }
+
     .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-      padding: 1.5rem;
-      margin-bottom: 2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.75rem; margin-bottom: 1.5rem;
     }
-    label {
-      display: block;
-      margin: 0.5rem 0 0.25rem;
-      font-weight: 500;
+    .card-title {
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.25rem;
     }
-    input[type="text"],
-    input[type="email"],
-    input[type="file"],
+
+    .field-label {
+      display: block; font-size: 0.75rem; font-weight: 500; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 0.35rem; margin-top: 1rem;
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%; padding: 0.65rem 1rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text);
+      font-family: 'Sora', sans-serif; font-size: 0.92rem;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="email"]:focus {
+      outline: none; border-color: var(--primary);
+    }
+
+    .file-input { display: none; }
+    .file-label {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem 1rem; background: var(--surface2);
+      border: 1px dashed var(--border); border-radius: 6px;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      margin-top: 0.35rem; user-select: none;
+    }
+    .file-label:hover { border-color: var(--primary); background: #1c2128; }
+    .file-label.chosen { border-color: var(--success); border-style: solid; }
+    .file-icon  { font-size: 1.1rem; flex-shrink: 0; }
+    .file-hint  { font-size: 0.84rem; color: var(--muted); }
+    .file-name  { font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;
+                  color: var(--success); display: none; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.7rem 1.4rem; border: none; border-radius: 6px;
+      font-family: 'Sora', sans-serif; font-weight: 600; font-size: 0.88rem;
+      cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary { background: var(--primary-d); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary); }
+
+    .badge {
+      display: inline-block; padding: 0.18rem 0.55rem; border-radius: 20px;
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-personal   { background:#2d1f4e; color:var(--personal);   border:1px solid var(--personal); }
+    .badge-technical  { background:#1a2f4e; color:var(--technical);  border:1px solid var(--technical); }
+    .badge-experience { background:#1a3525; color:var(--experience); border:1px solid var(--experience); }
+    .badge-followup   { background:#3d2a0e; color:var(--followup);   border:1px solid var(--followup); }
+    .badge-unknown    { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+
+    .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem; }
+    .stat-box  { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.9rem; text-align:center; }
+    .stat-val  { font-size:1.35rem; font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .stat-lbl  { font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:0.2rem; }
+    .c-pass    { color:var(--success); }
+    .c-weak    { color:var(--warning); }
+    .c-reject  { color:var(--danger); }
+    .c-neutral { color:var(--primary); }
+
+    .prog-wrap { margin-bottom:1.25rem; }
+    .prog-info { display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); margin-bottom:0.35rem; }
+    .prog-bar  { height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+    .prog-fill { height:100%; background:linear-gradient(90deg,var(--primary-d),var(--primary)); transition:width 0.5s ease; }
+
+    .q-header { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.75rem; }
+    .q-num    { font-size:0.72rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+    .q-text   { font-size:1.05rem; font-weight:500; line-height:1.7; }
+    .q-topic  { font-size:0.75rem; color:var(--muted); font-style:italic; margin-top:0.5rem; }
+
+    .fu-notice {
+      display:none; align-items:center; gap:0.5rem;
+      padding:0.55rem 1rem; background:#3d2a0e; border:1px solid var(--followup);
+      border-radius:6px; font-size:0.8rem; color:var(--followup); margin-bottom:0.9rem;
+    }
+
+    /* ── Voice bar ─────────────────────────────────────── */
+    .voice-bar {
+      display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;
+      padding:0.65rem 0.85rem; background:var(--surface2);
+      border:1px solid var(--border); border-radius:8px;
+      margin-bottom:0.85rem;
+    }
+    .vbtn {
+      display:inline-flex; align-items:center; gap:0.35rem;
+      padding:0.35rem 0.8rem; border-radius:20px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--muted); font-size:0.78rem; font-family:'Sora',sans-serif;
+      font-weight:500; cursor:pointer; transition:all 0.18s;
+    }
+    .vbtn:hover { border-color:var(--primary); color:var(--primary); }
+    .vbtn.tts-on  { border-color:var(--primary); color:var(--primary); background:#0d1f3c; }
+    .vbtn.mic-rec {
+      border-color:var(--danger); color:var(--danger); background:#2a0d0d;
+      animation: mic-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes mic-pulse {
+      0%,100% { box-shadow:0 0 0 0 rgba(248,81,73,0.35); }
+      50%      { box-shadow:0 0 0 6px rgba(248,81,73,0); }
+    }
+    .vbtn.mic-on  { border-color:var(--success); color:var(--success); background:#0d2a18; }
+    .vdivider { width:1px; height:18px; background:var(--border); margin:0 0.2rem; }
+
+    /* speaking wave */
+    .speak-wave { display:none; align-items:flex-end; gap:2px; height:16px; margin-left:0.2rem; }
+    .speak-wave.active { display:flex; }
+    .speak-wave span {
+      width:3px; border-radius:2px; background:var(--primary);
+      animation: sw 0.9s ease-in-out infinite;
+    }
+    .speak-wave span:nth-child(1){height:4px;  animation-delay:0s;}
+    .speak-wave span:nth-child(2){height:12px; animation-delay:0.1s;}
+    .speak-wave span:nth-child(3){height:7px;  animation-delay:0.2s;}
+    .speak-wave span:nth-child(4){height:14px; animation-delay:0.15s;}
+    .speak-wave span:nth-child(5){height:5px;  animation-delay:0.05s;}
+    @keyframes sw {
+      0%,100% { transform:scaleY(0.35); opacity:0.4; }
+      50%      { transform:scaleY(1);   opacity:1; }
+    }
+    .voice-status { font-size:0.73rem; color:var(--muted); font-style:italic; margin-left:auto; }
+
+    /* ── Score feedback ── */
+    .score-fb {
+      display:none; padding:0.9rem 1rem; border-radius:8px; margin-bottom:1rem;
+    }
+    .score-high { background:#1a3525; border-left:3px solid var(--success); }
+    .score-mid  { background:#2d2209; border-left:3px solid var(--warning); }
+    .score-low  { background:#3d1c1c; border-left:3px solid var(--danger); }
+    .score-lbl  { font-weight:700; font-family:'JetBrains Mono',monospace; font-size:1rem; }
+    .score-dims {
+      display:grid; grid-template-columns:repeat(5,1fr);
+      gap:0.4rem; margin-top:0.75rem;
+    }
+    .dim-box {
+      background:rgba(0,0,0,0.2); border-radius:6px;
+      padding:0.4rem 0.3rem; text-align:center;
+    }
+    .dim-val { font-size:0.95rem; font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .dim-lbl { font-size:0.6rem; color:var(--muted); text-transform:uppercase;
+               letter-spacing:0.4px; margin-top:0.15rem; }
+    .dim-bar-wrap { height:3px; background:rgba(255,255,255,0.1);
+                    border-radius:2px; margin-top:0.3rem; overflow:hidden; }
+    .dim-bar  { height:100%; border-radius:2px; transition:width 0.6s ease; }
+    .score-insight { margin-top:0.65rem; font-size:0.82rem; line-height:1.5; }
+    .insight-s { color:#3fb950; }
+    .insight-w { color:#ffa657; margin-top:0.2rem; }
+
+    /* ── Generating pulse ── */
+    .generating-box {
+      display:none; align-items:center; gap:0.75rem;
+      padding:1rem 1.25rem; background:var(--surface2);
+      border:1px solid var(--border); border-radius:8px;
+      color:var(--muted); font-size:0.88rem; margin-bottom:1rem;
+    }
+    .dot-pulse { display:flex; gap:5px; align-items:center; }
+    .dot-pulse span {
+      width:7px; height:7px; border-radius:50%;
+      background:var(--primary); display:inline-block;
+      animation: dpulse 1.2s ease-in-out infinite;
+    }
+    .dot-pulse span:nth-child(2){ animation-delay:0.2s; }
+    .dot-pulse span:nth-child(3){ animation-delay:0.4s; }
+    @keyframes dpulse {
+      0%,80%,100%{ transform:scale(0.5); opacity:0.3; }
+      40%        { transform:scale(1);   opacity:1; }
+    }
+
     textarea {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      margin-bottom: 1rem;
+      width:100%; padding:0.85rem 1rem;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:6px; color:var(--text);
+      font-family:'Sora',sans-serif; font-size:0.92rem;
+      resize:vertical; min-height:120px; transition:border-color 0.2s;
     }
-    textarea {
-      min-height: 120px;
-      resize: vertical;
+    textarea:focus { outline:none; border-color:var(--primary); }
+    textarea.mic-active { border-color:var(--danger); }
+
+    .sum-item {
+      padding:0.9rem; background:var(--surface2); border:1px solid var(--border);
+      border-radius:8px; margin-bottom:0.65rem;
     }
-    button {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
+    .sum-q { font-weight:500; font-size:0.88rem; margin-bottom:0.4rem; line-height:1.5; }
+    .sum-a { color:var(--muted); font-size:0.82rem; margin-bottom:0.4rem; line-height:1.5; }
+    .sum-s { font-family:'JetBrains Mono',monospace; font-weight:600; font-size:0.82rem; }
+
+    .spinner-row {
+      display:none; align-items:center; gap:0.6rem;
+      padding:0.6rem 0; color:var(--muted); font-size:0.85rem;
     }
-    button:hover:not(:disabled) {
-      background: var(--primary-dark);
+    .spin {
+      width:15px; height:15px; border:2px solid var(--border);
+      border-top-color:var(--primary); border-radius:50%;
+      animation:spin 0.7s linear infinite; flex-shrink:0;
     }
-    button:disabled {
-      background: #cbd5e1;
-      cursor: not-allowed;
+    @keyframes spin { to{ transform:rotate(360deg); } }
+
+    .error-box {
+      padding:0.7rem 1rem; background:#3d1c1c; border:1px solid var(--danger);
+      border-radius:6px; color:var(--danger); font-size:0.85rem; margin-top:0.75rem;
     }
-    #result, #current, #summary {
-      margin-top: 1.5rem;
-      padding: 1.25rem;
-      background: #f8fafc;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+    .complete-msg {
+      text-align:center; padding:2rem 1rem; color:var(--success);
+      font-size:1.1rem; font-weight:600;
     }
-    .score {
-      color: var(--success);
-      font-weight: bold;
-    }
-    .error {
-      color: var(--danger);
-      font-weight: 500;
-    }
-    .loading {
-      color: var(--gray);
-      font-style: italic;
-      margin: 1rem 0;
-    }
-    .complete {
-      text-align: center;
-      font-size: 1.25rem;
-      color: var(--success);
-      margin: 2rem 0;
-    }
+    .mt1 { margin-top:1rem; }
   </style>
 </head>
 <body>
-  <div class="container">
+<div class="container">
+
+  <header>
     <h1>ATS AI Interview Agent</h1>
+    <p>Personal → Technical → Experience · Adaptive follow-ups · Dynamic length</p>
+  </header>
 
-    <div class="card">
-      <h2>1. Upload Resume & Job Description</h2>
-      <label>Name</label>
-      <input type="text" id="name" placeholder="Your full name" required />
+  <!-- Upload -->
+  <div class="card" id="uploadCard">
+    <div class="card-title">Upload &amp; Start</div>
 
-      <label>Email</label>
-      <input type="email" id="email" placeholder="you@example.com" required />
+    <span class="field-label">Full Name</span>
+    <input type="text" id="nameInput" placeholder="Your full name"/>
 
-      <label>Resume (PDF)</label>
-      <input type="file" id="resume" accept=".pdf" required />
+    <span class="field-label">Email</span>
+    <input type="email" id="emailInput" placeholder="you@example.com"/>
 
-      <label>Job Description (PDF)</label>
-      <input type="file" id="jd" accept=".pdf" required />
+    <span class="field-label" style="margin-top:1.2rem;">Resume (PDF)</span>
+    <label class="file-label" id="resumeLabel" for="resumeFile">
+      <span class="file-icon">📄</span>
+      <span class="file-hint" id="resumeHint">Click to choose PDF…</span>
+      <span class="file-name" id="resumeFileName"></span>
+    </label>
+    <input type="file" id="resumeFile" class="file-input" accept=".pdf"
+           onchange="onFileChosen('resumeFile','resumeLabel','resumeHint','resumeFileName')"/>
 
-      <button id="uploadBtn" onclick="uploadFiles()">Upload & Start</button>
+    <span class="field-label" style="margin-top:1.2rem;">Job Description (PDF)</span>
+    <label class="file-label" id="jdLabel" for="jdFile">
+      <span class="file-icon">📄</span>
+      <span class="file-hint" id="jdHint">Click to choose PDF…</span>
+      <span class="file-name" id="jdFileName"></span>
+    </label>
+    <input type="file" id="jdFile" class="file-input" accept=".pdf"
+           onchange="onFileChosen('jdFile','jdLabel','jdHint','jdFileName')"/>
+
+    <div class="mt1">
+      <div class="spinner-row" id="uploadSpinner">
+        <div class="spin"></div>
+        <span id="uploadSpinText">Analysing resume…</span>
+      </div>
+      <button class="btn btn-primary" id="uploadBtn" onclick="uploadFiles()">
+        ▶ Analyse &amp; Start
+      </button>
     </div>
-
-    <div id="loading" class="loading"></div>
-    <div id="result" class="card" style="display:none;"></div>
-
-    <div id="interview" class="card" style="display:none;">
-      <h2>2. Interview</h2>
-      <div id="current" class="card" style="display:none;"></div>
-      <textarea id="answer" placeholder="Type your answer here..." rows="6"></textarea>
-      <button id="submitBtn" onclick="submitAnswer()" disabled>Submit Answer</button>
-    </div>
-
-    <div id="summary" class="card" style="display:none;"></div>
   </div>
+
+  <!-- Screening -->
+  <div class="card" id="screenCard" style="display:none;">
+    <div class="card-title">Screening Result</div>
+    <div class="stat-grid" id="screenGrid"></div>
+    <div id="errorSection"></div>
+  </div>
+
+  <!-- Interview -->
+  <div class="card" id="interviewCard" style="display:none;">
+    <div class="card-title">Interview</div>
+
+    <div class="prog-wrap">
+      <div class="prog-info">
+        <span id="progLabel">Question 1</span>
+        <span>Dynamic length · max 10</span>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-fill" id="progFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="fu-notice" id="fuNotice">
+      ↩ Follow-up — your previous answer needed more depth
+    </div>
+
+    <div id="questionBox" style="margin-bottom:1rem;">
+      <div class="q-header">
+        <span class="badge badge-personal" id="qBadge">Personal</span>
+        <span class="q-num" id="qNum">Q1</span>
+        <!-- replay button -->
+        <button class="vbtn" id="replayBtn" onclick="replayQuestion()"
+                title="Read question again" style="margin-left:auto;padding:0.25rem 0.65rem;font-size:0.72rem;">
+          🔊 Replay
+        </button>
+      </div>
+      <div class="q-text" id="qText">Loading…</div>
+      <div class="q-topic" id="qTopic"></div>
+    </div>
+
+    <div class="score-fb" id="scoreFb"></div>
+
+    <div class="generating-box" id="generatingBox">
+      <div class="dot-pulse"><span></span><span></span><span></span></div>
+      <span>Generating next question…</span>
+    </div>
+
+    <!-- Voice bar -->
+    <div class="voice-bar" id="voiceBar">
+
+      <!-- TTS toggle -->
+      <button class="vbtn tts-on" id="ttsBtn" onclick="toggleTTS()" title="Toggle auto-read questions">
+        🔊 <span id="ttsBtnTxt">Voice On</span>
+      </button>
+
+      <!-- speaking wave (shown while TTS is reading) -->
+      <div class="speak-wave" id="speakWave">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="vdivider"></div>
+
+      <!-- Mic toggle -->
+      <button class="vbtn" id="micBtn" onclick="toggleMic()" title="Speak your answer">
+        🎤 <span id="micBtnTxt">Speak Answer</span>
+      </button>
+
+      <span class="voice-status" id="voiceStatus"></span>
+    </div>
+
+    <textarea id="answerBox" placeholder="Type your answer here… or click 🎤 Speak Answer" rows="5"></textarea>
+    <div class="mt1">
+      <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>
+        Submit Answer →
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="card" id="summaryCard" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <div class="card-title" style="margin-bottom:0;">Interview Summary</div>
+      <button class="btn btn-primary" id="reportBtn" onclick="downloadReport()"
+              style="display:none;font-size:0.82rem;padding:0.55rem 1rem;">
+        ⬇ Download PDF Report
+      </button>
+    </div>
+    <div class="spinner-row" id="reportSpinner">
+      <div class="spin"></div>
+      <span>Generating report… this takes ~20 seconds</span>
+    </div>
+    <div id="summaryContent"></div>
+  </div>
+
+</div>
 
 <script>
   const API = "http://127.0.0.1:8000/applicants";
-  let applicantId = null;
+  let applicantId  = null;
+  let currentIndex = 0;
 
-  function setLoading(text) {
-    const el = document.getElementById("loading");
-    el.textContent = text || "";
-    el.style.display = text ? "block" : "none";
+  // ─────────────────────────────────────────────────────────
+  //  VOICE — Text-to-Speech  (Web Speech API, 100% free)
+  // ─────────────────────────────────────────────────────────
+
+  let ttsEnabled  = true;        // auto-read questions
+  let ttsVoice    = null;        // chosen voice
+  let ttsSpeaking = false;
+
+  // Pick best voice: prefer a natural English voice
+  function initVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = [
+      "Google UK English Female", "Google US English",
+      "Microsoft Zira", "Microsoft David",
+      "Samantha", "Karen", "Moira", "Daniel"
+    ];
+    for (const name of preferred) {
+      const v = voices.find(v => v.name === name);
+      if (v) { ttsVoice = v; return; }
+    }
+    // fallback: first English voice
+    ttsVoice = voices.find(v => v.lang.startsWith("en")) || voices[0] || null;
   }
 
-  async function uploadFiles() {
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const resume = document.getElementById("resume").files[0];
-    const jd = document.getElementById("jd").files[0];
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = initVoice;
+    initVoice();
+  }
 
-    if (!name || !email || !resume || !jd) {
-      alert("Please fill all fields and select both PDFs.");
+  function speak(text) {
+    if (!window.speechSynthesis || !ttsEnabled) return;
+    window.speechSynthesis.cancel();           // stop anything playing
+    const clean = text.replace(/[#*`_~]/g, "").trim();
+    const utt   = new SpeechSynthesisUtterance(clean);
+    if (ttsVoice) utt.voice = ttsVoice;
+    utt.rate   = 0.92;
+    utt.pitch  = 1.0;
+    utt.volume = 1.0;
+
+    utt.onstart = () => {
+      ttsSpeaking = true;
+      document.getElementById("speakWave").classList.add("active");
+      document.getElementById("voiceStatus").textContent = "Reading question…";
+    };
+    utt.onend = utt.onerror = () => {
+      ttsSpeaking = false;
+      document.getElementById("speakWave").classList.remove("active");
+      document.getElementById("voiceStatus").textContent = "";
+    };
+    window.speechSynthesis.speak(utt);
+  }
+
+  function stopSpeaking() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    ttsSpeaking = false;
+    document.getElementById("speakWave").classList.remove("active");
+    document.getElementById("voiceStatus").textContent = "";
+  }
+
+  function toggleTTS() {
+    ttsEnabled = !ttsEnabled;
+    const btn = document.getElementById("ttsBtn");
+    const txt = document.getElementById("ttsBtnTxt");
+    if (ttsEnabled) {
+      btn.classList.add("tts-on");
+      txt.textContent = "Voice On";
+      // read current question
+      const q = document.getElementById("qText").textContent;
+      if (q && q !== "Loading…") speak(q);
+    } else {
+      btn.classList.remove("tts-on");
+      txt.textContent = "Voice Off";
+      stopSpeaking();
+    }
+  }
+
+  function replayQuestion() {
+    const q = document.getElementById("qText").textContent;
+    if (q && q !== "Loading…") {
+      stopSpeaking();
+      setTimeout(() => speak(q), 100);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  VOICE — Speech-to-Text  (Web Speech API, 100% free)
+  //  Works in Chrome and Edge. Firefox needs a flag.
+  // ─────────────────────────────────────────────────────────
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition   = null;
+  let micActive     = false;
+  let interimBuffer = "";
+
+  if (SpeechRec) {
+    recognition = new SpeechRec();
+    recognition.continuous    = true;   // keep listening until stopped
+    recognition.interimResults = true;  // show words as they are spoken
+    recognition.lang          = "en-US";
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = function(e) {
+      let interim = "";
+      let final   = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t + " ";
+        else interim += t;
+      }
+      const box = document.getElementById("answerBox");
+      // append finalized text to existing content
+      if (final) {
+        interimBuffer  = "";
+        box.value     += final;
+      }
+      // show interim as a live preview in status
+      document.getElementById("voiceStatus").textContent =
+        interim ? "Hearing: " + interim : "Listening…";
+    };
+
+    recognition.onerror = function(e) {
+      console.warn("SpeechRec error:", e.error);
+      if (e.error === "not-allowed") {
+        document.getElementById("voiceStatus").textContent = "Mic access denied";
+      } else if (e.error !== "aborted") {
+        document.getElementById("voiceStatus").textContent = "Mic error: " + e.error;
+      }
+      stopMic();
+    };
+
+    recognition.onend = function() {
+      if (micActive) {
+        // auto-restart while mic is toggled on (Chrome stops after silence)
+        try { recognition.start(); } catch(e) {}
+      } else {
+        document.getElementById("voiceStatus").textContent = "";
+      }
+    };
+  }
+
+  function toggleMic() {
+    if (!SpeechRec) {
+      alert("Speech recognition is not supported in this browser.\nPlease use Chrome or Edge.");
       return;
     }
+    if (micActive) stopMic();
+    else startMic();
+  }
 
-    setLoading("Uploading files...");
+  function startMic() {
+    stopSpeaking();   // stop TTS so it doesn't loop back into mic
+    micActive = true;
+    interimBuffer = "";
+    try { recognition.start(); } catch(e) {}
+    const btn = document.getElementById("micBtn");
+    const txt = document.getElementById("micBtnTxt");
+    btn.classList.add("mic-rec");
+    txt.textContent = "Stop Recording";
+    document.getElementById("answerBox").classList.add("mic-active");
+    document.getElementById("voiceStatus").textContent = "Listening…";
+  }
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("resume", resume);
-    formData.append("jd", jd);
+  function stopMic() {
+    micActive = false;
+    try { recognition.stop(); } catch(e) {}
+    const btn = document.getElementById("micBtn");
+    const txt = document.getElementById("micBtnTxt");
+    btn.classList.remove("mic-rec");
+    txt.textContent = "Speak Answer";
+    document.getElementById("answerBox").classList.remove("mic-active");
+    document.getElementById("voiceStatus").textContent = "";
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  HELPERS
+  // ─────────────────────────────────────────────────────────
+
+  function stripMarkdown(text) {
+    if (!text) return "";
+    return text
+      .replace(/#{1,6}\s*/g, "")
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/\*(.+?)\*/g, "$1")
+      .replace(/`{1,3}[^`]*`{1,3}/g, "")
+      .replace(/^\s*[-*+]\s+/gm, "• ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  function onFileChosen(inputId, labelId, hintId, nameId) {
+    const f = document.getElementById(inputId).files[0];
+    if (!f) return;
+    document.getElementById(labelId).classList.add("chosen");
+    document.getElementById(hintId).style.display = "none";
+    const el = document.getElementById(nameId);
+    el.textContent = "✓ " + f.name;
+    el.style.display = "block";
+  }
+
+  function badgeClass(type) {
+    return ({personal:"badge-personal",technical:"badge-technical",
+             experience:"badge-experience",followup:"badge-followup"})[type]||"badge-unknown";
+  }
+  function badgeLabel(type) {
+    return ({personal:"Personal",technical:"Technical",
+             experience:"Experience",followup:"Follow-up"})[type]||(type||"Question");
+  }
+
+  function showQuestion(question, type, topic, index) {
+    const badge = document.getElementById("qBadge");
+    badge.className   = "badge " + badgeClass(type);
+    badge.textContent = badgeLabel(type);
+    document.getElementById("qNum").textContent   = "Q" + (index + 1);
+    document.getElementById("qText").textContent  = question;
+    document.getElementById("qTopic").textContent = topic ? "Topic: " + topic : "";
+    document.getElementById("fuNotice").style.display = type === "followup" ? "flex" : "none";
+    const pct = Math.min(Math.round((index / 10) * 100), 95);
+    document.getElementById("progLabel").textContent = "Question " + (index + 1);
+    document.getElementById("progFill").style.width  = pct + "%";
+    currentIndex = index;
+
+    // Auto-read the question aloud
+    speak(question);
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  UPLOAD
+  // ─────────────────────────────────────────────────────────
+
+  async function uploadFiles() {
+    const name   = document.getElementById("nameInput").value.trim();
+    const email  = document.getElementById("emailInput").value.trim();
+    const resume = document.getElementById("resumeFile").files[0];
+    const jd     = document.getElementById("jdFile").files[0];
+    if (!name || !email)  { alert("Please enter your name and email."); return; }
+    if (!resume)          { alert("Please select your Resume PDF."); return; }
+    if (!jd)              { alert("Please select the Job Description PDF."); return; }
+
+    const btn = document.getElementById("uploadBtn");
+    btn.disabled = true;
+    document.getElementById("uploadSpinText").textContent = "Extracting resume & generating Q1…";
+    document.getElementById("uploadSpinner").style.display = "flex";
+
+    const fd = new FormData();
+    fd.append("name", name); fd.append("email", email);
+    fd.append("resume", resume); fd.append("jd", jd);
 
     try {
-      console.log("Uploading to:", `${API}/`);
-      const res = await fetch(`${API}/`, {
-        method: "POST",
-        body: formData
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Upload failed");
-      }
-
+      const res  = await fetch(API + "/", { method:"POST", body:fd });
+      if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       applicantId = data.id;
 
-      document.getElementById("result").innerHTML = `
-        <h3>Screening Result</h3>
-        <p><strong>ID:</strong> ${data.id}</p>
-        <p><strong>Score:</strong> ${data.resume_match_score}</p>
-        <p><strong>Status:</strong> ${data.status}</p>
-      `;
-      document.getElementById("result").style.display = "block";
-      document.getElementById("interview").style.display = "block";
+      const sc    = data.resume_match_score || 0;
+      const st    = data.status || "";
+      const stCls = st==="screening_passed"?"c-pass":st==="screening_weak"?"c-weak":st.includes("reject")?"c-reject":"c-neutral";
 
-      // FIXED: Read the first question correctly from response
-      const firstQuestion = data.first_question || (data.questions && data.questions[0]) || "No question received from server";
-      document.getElementById("current").innerHTML = `
-        <h3>Question 1</h3>
-        <p>${firstQuestion}</p>
-      `;
-      document.getElementById("submitBtn").disabled = false;
+      document.getElementById("screenGrid").innerHTML =
+        '<div class="stat-box"><div class="stat-val c-neutral" style="font-size:1.1rem">'+data.id+'</div><div class="stat-lbl">Applicant ID</div></div>'+
+        '<div class="stat-box"><div class="stat-val c-neutral">'+sc+'</div><div class="stat-lbl">Match Score</div></div>'+
+        '<div class="stat-box"><div class="stat-val '+stCls+'" style="font-size:0.95rem">'+st.replace(/_/g," ")+'</div><div class="stat-lbl">Status</div></div>';
+      document.getElementById("screenCard").style.display = "block";
 
-      console.log("First question loaded:", firstQuestion);
-    } catch (err) {
-      console.error("Upload error:", err);
-      document.getElementById("result").innerHTML = `<p class="error">Error: ${err.message}</p>`;
-      document.getElementById("result").style.display = "block";
+      if (data.first_question) {
+        document.getElementById("uploadCard").style.display = "none";
+        document.getElementById("interviewCard").style.display = "block";
+        showQuestion(data.first_question, data.question_type||"personal", data.question_topic||"", 0);
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("answerBox").value = "";
+      } else {
+        document.getElementById("errorSection").innerHTML =
+          '<p style="color:var(--danger);margin-top:1rem;">Resume does not meet the minimum threshold.</p>';
+      }
+    } catch(err) {
+      document.getElementById("screenCard").innerHTML =
+        '<div class="card-title">Screening Result</div><div class="error-box">Upload error: '+err.message+'</div>';
+      document.getElementById("screenCard").style.display = "block";
     } finally {
-      setLoading("");
+      document.getElementById("uploadSpinner").style.display = "none";
+      btn.disabled = false;
     }
   }
+
+  // ─────────────────────────────────────────────────────────
+  //  SUBMIT ANSWER
+  // ─────────────────────────────────────────────────────────
 
   async function submitAnswer() {
-    const input = document.getElementById("answer");
-    const text = input.value.trim();
+    const ansEl  = document.getElementById("answerBox");
+    const answer = ansEl.value.trim();
+    if (!answer) { alert("Please type or speak your answer."); return; }
 
-    if (!text) {
-      alert("Please type your answer first.");
-      return;
-    }
+    // stop voice before submitting
+    stopSpeaking();
+    stopMic();
 
     const btn = document.getElementById("submitBtn");
-    btn.disabled = true;
-    btn.textContent = "Submitting...";
+    btn.disabled = true; btn.textContent = "Scoring…";
+    ansEl.disabled = true;
+
+    const fb = document.getElementById("scoreFb");
+    fb.style.display = "none";
 
     try {
-      console.log("Submitting answer for ID:", applicantId);
-      const res = await fetch(`${API}/${applicantId}/submit-answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question_index: 0,  // Always 0 - backend knows current is last
-          answer_text: text
-        })
+      const res = await fetch(API+"/"+applicantId+"/submit-answer", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({question_index:currentIndex, answer_text:answer})
       });
-
       if (!res.ok) {
-        const err = await res.json();
-        console.error("Submit error:", err);
-        throw new Error(err.detail || "Submit failed");
+        let msg="Submit failed";
+        try{msg=(await res.json()).detail||msg;}catch(e){}
+        throw new Error(msg);
       }
-
       const data = await res.json();
-      console.log("Submit success:", data);
 
-      alert(`Score: ${data.score}/10\n${data.explanation}`);
+      // ── Score breakdown ──
+      const score = data.score;
+      const ev    = data.evaluation || {};
+      const cls   = score>=7?"score-high":score>=4?"score-mid":"score-low";
+      const icon  = score>=7?"✓":score>=4?"~":"✗";
+      const col   = score>=7?"var(--success)":score>=4?"var(--warning)":"var(--danger)";
 
-      input.value = "";
+      function dimColor(v){ return v>=7?"#3fb950":v>=4?"#d29922":"#f85149"; }
+      function dimBar(v){ return '<div class="dim-bar-wrap"><div class="dim-bar" style="width:'+(v*10)+'%;background:'+dimColor(v)+'"></div></div>'; }
+      function dimBox(lbl,v){ return '<div class="dim-box"><div class="dim-val" style="color:'+dimColor(v)+'">'+v+'</div><div class="dim-lbl">'+lbl+'</div>'+dimBar(v)+'</div>'; }
 
-      // Show next question if returned
-      if (data.next_question) {
-        document.getElementById("current").innerHTML = `
-          <h3>Question ${data.current_progress + 1}</h3>
-          <p>${data.next_question}</p>
-        `;
-        btn.disabled = false;
-      } else {
-        document.getElementById("current").innerHTML = `<p class="complete">Interview Complete!</p>`;
-        btn.disabled = true;
+      const dims = ev.correctness!==undefined ?
+        '<div class="score-dims">'+dimBox("Correct",ev.correctness)+dimBox("Depth",ev.depth)+dimBox("Clarity",ev.clarity)+dimBox("Practical",ev.practical)+dimBox("Complete",ev.completeness)+'</div>' : "";
+      const insights = (ev.strength||ev.weakness) ?
+        '<div class="score-insight">'+(ev.strength?'<div class="insight-s">✓ '+ev.strength+'</div>':"")+
+        (ev.weakness?'<div class="insight-w">△ '+ev.weakness+'</div>':"")+
+        '</div>' : "";
+
+      fb.className   = "score-fb "+cls;
+      fb.innerHTML   = '<span class="score-lbl" style="color:'+col+'">'+icon+' '+score+'/10</span>'+
+                       '<span style="color:var(--muted);font-size:0.82rem;margin-left:0.6rem">'+(data.explanation||"")+'</span>'+
+                       dims+insights;
+      fb.style.display = "block";
+
+      // Speak the score summary
+      speak(icon+" Score "+score+" out of 10. "+(ev.strength||data.explanation||""));
+
+      ansEl.value = "";
+
+      if (data.interview_complete) {
+        stopSpeaking();
+        document.getElementById("questionBox").innerHTML = '<div class="complete-msg">✓ Interview Complete!</div>';
+        document.getElementById("fuNotice").style.display  = "none";
+        document.getElementById("progFill").style.width    = "100%";
+        document.getElementById("progLabel").textContent   = "Complete";
+        document.getElementById("submitBtn").style.display = "none";
+        document.getElementById("voiceBar").style.display  = "none";
+        ansEl.style.display = "none";
+        setTimeout(()=>speak("The interview is complete. Great work!"), 500);
+        loadSummary(true);
+
+      } else if (data.next_question) {
+        const genBox = document.getElementById("generatingBox");
+        btn.textContent = "Submit Answer →";
+
+        await new Promise(r=>setTimeout(r,1800)); // let user read score + hear it
+
+        fb.style.display     = "none";
+        genBox.style.display = "flex";
+
+        await new Promise(r=>setTimeout(r,500));
+
+        genBox.style.display = "none";
+        stopSpeaking();
+
+        const nq = data.next_question;
+        showQuestion(nq.question, nq.type, nq.topic, nq.index);
+        ansEl.disabled = false;
+        btn.disabled   = false;
+        ansEl.focus();
+        loadSummary(false);
       }
 
-      loadSummary();
-    } catch (err) {
-      console.error("Submit failed:", err);
-      alert("Error submitting: " + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Submit Answer";
+    } catch(err) {
+      fb.style.display = "none";
+      alert("Error: "+err.message);
+      ansEl.disabled  = false;
+      btn.disabled    = false;
+      btn.textContent = "Submit Answer →";
     }
   }
 
-  async function loadSummary() {
+  // ─────────────────────────────────────────────────────────
+  //  DOWNLOAD REPORT
+  // ─────────────────────────────────────────────────────────
+
+  async function downloadReport() {
     if (!applicantId) return;
-
+    const btn=document.getElementById("reportBtn");
+    const spinner=document.getElementById("reportSpinner");
+    btn.disabled=true; btn.textContent="Generating…";
+    spinner.style.display="flex";
     try {
-      const res = await fetch(`${API}/${applicantId}/summary`);
+      const res  = await fetch(API+"/"+applicantId+"/report");
       if (!res.ok) throw new Error(await res.text());
-
-      const data = await res.json();
-
-      document.getElementById("summary").innerHTML = `
-        <h2>Interview Summary</h2>
-        <p><strong>Total Score:</strong> ${data.total_interview_score}/10</p>
-        <p><strong>Answered:</strong> ${data.answered_questions} of ${data.total_questions}</p>
-        <p><strong>Progress:</strong> ${data.current_progress} / ${data.total_questions}</p>
-        <h3>Answers & Scores</h3>
-        ${data.interview_summary.map(item => `
-          <div class="summary-item">
-            <strong>Q${item.question_index + 1}:</strong> ${item.question}<br>
-            <strong>Answer:</strong> ${item.answer || "Not answered yet"}<br>
-            <strong>Score:</strong> <span class="score">${item.score !== null ? item.score + "/10" : "Pending"}</span>
-          </div>
-        `).join("")}
-      `;
-      document.getElementById("summary").style.display = "block";
-    } catch (err) {
-      document.getElementById("summary").innerHTML = `<p class="error">Summary failed: ${err.message}</p>`;
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href=url; a.download="interview_report_"+applicantId+".pdf";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      btn.textContent="⬇ Download PDF Report";
+    } catch(err) {
+      alert("Report failed: "+err.message);
+      btn.textContent="⬇ Download PDF Report";
+    } finally {
+      btn.disabled=false; spinner.style.display="none";
     }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  LOAD SUMMARY
+  // ─────────────────────────────────────────────────────────
+
+  async function loadSummary(showDownload) {
+    if (!applicantId) return;
+    try {
+      const res  = await fetch(API+"/"+applicantId+"/summary");
+      if (!res.ok) return;
+      const data = await res.json();
+      const sc   = data.total_interview_score;
+      const col  = sc>=7?"var(--success)":sc>=4?"var(--warning)":"var(--danger)";
+
+      let html =
+        '<div class="stat-grid" style="margin-bottom:1.25rem;">'+
+          '<div class="stat-box"><div class="stat-val" style="color:'+col+'">'+sc+'/10</div><div class="stat-lbl">Avg Score</div></div>'+
+          '<div class="stat-box"><div class="stat-val c-neutral">'+data.answered_questions+'/'+data.total_questions+'</div><div class="stat-lbl">Answered</div></div>'+
+          '<div class="stat-box"><div class="stat-val c-neutral">'+data.current_progress+'</div><div class="stat-lbl">Progress</div></div>'+
+        '</div>'+
+        '<div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">Questions &amp; Scores</div>';
+
+      (data.interview_summary||[]).forEach(function(item){
+        const sc2 = item.score;
+        const scT = (sc2!==null&&sc2!==undefined)?sc2+"/10":"Pending";
+        const scC = (sc2===null||sc2===undefined)?"var(--muted)":sc2>=7?"var(--success)":sc2>=4?"var(--warning)":"var(--danger)";
+        const ans = item.answer ? stripMarkdown(item.answer) : "<em>Not answered yet</em>";
+        html +=
+          '<div class="sum-item">'+
+            '<div style="display:flex;align-items:center;gap:0.45rem;margin-bottom:0.5rem;">'+
+              '<span class="badge '+badgeClass(item.question_type)+'">'+badgeLabel(item.question_type)+'</span>'+
+              '<span style="font-size:0.7rem;color:var(--muted)">Q'+(item.question_index+1)+'</span>'+
+            '</div>'+
+            '<div class="sum-q">'+(item.question||"")+'</div>'+
+            '<div class="sum-a">'+ans+'</div>'+
+            '<div class="sum-s" style="color:'+scC+'">'+scT+'</div>'+
+          '</div>';
+      });
+
+      document.getElementById("summaryContent").innerHTML = html;
+      document.getElementById("summaryCard").style.display = "block";
+      if (showDownload) document.getElementById("reportBtn").style.display = "inline-flex";
+    } catch(e){ console.error("Summary error:", e); }
   }
 </script>
 </body>
